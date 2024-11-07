@@ -1,0 +1,13 @@
+cv2_enumerate_cameras
+deepface
+matplotlib
+moviepy
+numpy
+opencv_python_headless
+pyaudio
+PyQt5
+scipy
+sounddevice
+torch
+torchaudio
+transformers

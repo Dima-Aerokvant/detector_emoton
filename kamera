@@ -1,0 +1,124 @@
+<!--Преобладающая эмоция-->
+    <div class="container text-center">  
+      <p class="fw-semibold">Преобладающая эмоция:</p> <p></p>
+    </div>
+    
+    <!--Таблицы-->
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <table class="table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Распознавание по видео</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Злость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Брезгливость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Испуг</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Радость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Печаль</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Удивленность</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Нейтральность</th>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col">
+          <table class="table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Распознавание по интонации</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Нейтральность</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Злость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Радость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Печаль</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Другое</th>
+                <td></td>
+              </tr>
+              <tr><th>ㅤ</th><td>ㅤ</td></tr>
+              <tr><th>ㅤ</th><td>ㅤ</td></tr>
+            </tbody>
+          </table>
+        </div>      
+        <div class = "col">
+          <table class="table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Смысловая нагрузка</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Радость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Нейтральность</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Печаль</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Брезгливость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Злость</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Испуг</th>
+                <td></td>
+              </tr>
+              <tr>
+                <th scope="row">Другое</th>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>

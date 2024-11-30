@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
@@ -10,7 +10,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-
+@app.route('/')
+def index():
+    return redirect(url_for('online'))
 @app.route('/online')
 def online():
     return render_template('online.html')

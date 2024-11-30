@@ -47,7 +47,7 @@ def startRec(data):
     if data["data"]:
         print ("START")
     else:
-        print ("SEND")
+        print ("SEND") #sahdahfva
         emit('send_list', ["123", "234", "345"])
 
 def testf():

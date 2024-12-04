@@ -9,6 +9,7 @@ import yarppg
 rppg = yarppg.Rppg()
 
 def pulse_detector(img, fps):   
+    global rppg
     result = rppg.process_frame(img)
     return 60 * fps / result.hr #возвращает толи пульс то ли какую то бяку
 

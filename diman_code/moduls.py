@@ -1,18 +1,12 @@
 from aniemore.recognizers.multimodal import VoiceTextRecognizer
 from aniemore.utils.speech2text import SmallSpeech2Text
-from aniemore.models import HuggingFaceModel
+from aniemore.models import HuggingFaceModel# есть прикол что библеотеки нужно подключать в определеннном порядке иначе на длл будет ругаться
 from deepface import DeepFace
 import cv2
 import torch
 import yarppg
 
 rppg = yarppg.Rppg()
-
-def pulse_detector(img, fps):   
-    global rppg
-    result = rppg.process_frame(img)
-    return 60 * fps / result.hr #возвращает толи пульс то ли какую то бяку
-
 
 def frame_detection(img):
     faceCascade= cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")

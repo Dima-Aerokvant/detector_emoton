@@ -41,15 +41,16 @@ def uploadFrame(data):
     img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
     emotions, img_rec = moduls.frame_detection(img)
     fps = data['pulse']
-    pulse_now = moduls.pulse_detector(img,fps)
-    if(pulse_now>40):
-        data_now.pulse_line.append(pulse_now)
-    print(pulse_now)
-    jpg_img = cv2.imencode('.jpg', img_rec)
+    result = moduls.rppg.process_frame(img)
+    if(result.hr > 60):
+        data_now.pulse_line.append(result.hr)
+    print(result.hr)# первые 300 кадров он пишет нан. нужно как то изменить размер буферра https://samproell.github.io/yarppg/deepdive/ 
+    jpg_img = cv2.imencode('.jpg', img_rec)# и по идее тут есть казус  с частотой кадров ведь мы берем каждый какой то там кадр
     b64_string = base64.b64encode(jpg_img[1]).decode('utf-8')
     b64_string = "data:image/jpg;base64," + b64_string
-    for emotion in emotions:
-        data_now.video_probabilities[emotion] = (data_now.video_probabilities[emotion]+emotions[emotion])/2
+    if(emotions):
+        for emotion in emotions:
+            data_now.video_probabilities[emotion] = (data_now.video_probabilities[emotion]+emotions[emotion])/2
     emit('my_response', b64_string)
     data_now = data_template
 
@@ -70,9 +71,7 @@ def emit_result(data):
         series_pulse.append([data_now.pulse_line[i],i+1])
 
     send = {'series_aud' : audio_probab, 'series_vid' : video_probab,'series_txt' : text_probab,'series_pulse':series_pulse}
-    print(send)
     emit('chart_update', send)
-    print('посылка')
     data_now = data_template # чистим для запуска нового теста
 
 

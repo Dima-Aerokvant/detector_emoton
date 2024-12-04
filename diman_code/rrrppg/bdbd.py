@@ -1,8 +1,15 @@
-import yarppg
+from aniemore.recognizers.multimodal import VoiceTextRecognizer
+from aniemore.utils.speech2text import SmallSpeech2Text
+from aniemore.models import HuggingFaceModel# есть прикол что библеотеки нужно подключать в определеннном порядке иначе на длл будет ругаться
+from deepface import DeepFace
 import cv2
+import torch
+import yarppg
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
+
+
 
 rppg = yarppg.Rppg()
 

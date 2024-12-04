@@ -49,13 +49,14 @@
       <p class="fw-semibold">Преобладающая эмоция:</p> <p></p>
     </div>
 
-    <!--Создаем 3 диаграммы для вывода вероятностей-->
+    <!--Создаем 3 графика для вывода вероятностей-->
     <div class="card" style= "width: 100; height: 100">
       <div class="row">
           <div class = "col">
             <div id="chart_audio">
               <script> 
                 var chart_aud = anychart.column();
+                var series_aud = chart_aud.column();
                 chart_aud.xAxis().title("Emotion");
                 chart_aud.yAxis().title("probabilities");
                 chart_aud.title("audio emotion");
@@ -68,12 +69,13 @@
           <div class = "col">
             <div id="chart_video">
               <script> 
-                var chart_aud = anychart.column();
-                chart_aud.xAxis().title("Emotion");
-                chart_aud.yAxis().title("probabilities");
-                chart_aud.title("video emotion");
-                chart_aud.container("chart_video");
-                chart_aud.draw();
+                var chart_vid = anychart.column();
+                var series_vid = chart_vid.column();
+                chart_vid.xAxis().title("Emotion");
+                chart_vid.yAxis().title("probabilities");
+                chart_vid.title("video emotion");
+                chart_vid.container("chart_video");
+                chart_vid.draw();
               </script>
             </div>
           </div>
@@ -81,16 +83,33 @@
           <div class = "col">
             <div id="chart_txt">
               <script> 
-                var chart_aud = anychart.column();
-                chart_aud.xAxis().title("Emotion");
-                chart_aud.yAxis().title("probabilities");
-                chart_aud.title("text emotion");
-                chart_aud.container("chart_txt");
-                chart_aud.draw();
+                var chart_txt = anychart.column();
+                var series_txt = chart_vid.column();
+                chart_txt.xAxis().title("Emotion");
+                chart_txt.yAxis().title("probabilities");
+                chart_txt.title("text emotion");
+                chart_txt.container("chart_txt");
+                chart_txt.draw();
               </script>
             </div>
           </div>
 
+      </div>
+    </div>
+    <div class="row">
+      <div id="chart_puls">
+        <script>
+          var chart_pulse = anychart.line()
+          var series_pulse = chart_pulse.line( [
+            ["January", 10000],
+            ["February", 12000],
+            ["March", 18000],
+            ["April", 11000],
+            ["May", 9000]
+          ]);
+          chart_pulse.container("chart_puls")
+          chart_pulse.draw()
+        </script>
       </div>
     </div>
   </body>    
@@ -133,8 +152,6 @@
           document.getElementById("btnStart").classList.remove('btn-secondary');
           document.getElementById("btnStart").classList.add('btn-primary');
 
-          //document.getElementById("btnStart").textContent = "KLAJDFJKDAHFJKAD"
-
           mediaRecorder.stop();
           clearInterval(videoSender);
 
@@ -142,9 +159,11 @@
               type: 'audio/wav'
           });
           socket.emit('uploadAudio', {data: voiceBlob})
+          socket.emit('uploadResult', NaN)
+          console.log("upld result")
+
         }
         else {
-          //$('#btnStart').removeClass('btn-primary').addClass('btn-success');
           document.getElementById("btnStart").classList.remove('btn-primary');
           document.getElementById("btnStart").classList.add('btn-secondary');
 
@@ -174,6 +193,20 @@
       socket.on('my_response', function(data) {
               server.src = data
           });
+
+      socket.on('chart_update', function(data) {/*Рисум значения в диаграммах*/
+          console.log(data)
+          var series_aud = chart_aud.column(data['series_aud'])
+          chart_aud.draw()
+
+          var series_vid = chart_vid.column(data['series_vid'])
+          chart_vid.draw()
+
+          var series_txt = chart_txt.column(data["series_txt"])
+          chart_txt.draw()
+
+      });    
+
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   </body>

@@ -1,10 +1,10 @@
-from deepface import DeepFace
-import cv2
-import yarppg
-import torch
 from aniemore.recognizers.multimodal import VoiceTextRecognizer
 from aniemore.utils.speech2text import SmallSpeech2Text
 from aniemore.models import HuggingFaceModel
+from deepface import DeepFace
+import cv2
+import torch
+import yarppg
 
 rppg = yarppg.Rppg()
 
@@ -27,6 +27,7 @@ def frame_detection(img):
             )  
             emotions = (objs[0])['emotion']
             return emotions, img 
+    return None, img 
 
 def audio_recognition(file_path):
     model = HuggingFaceModel.MultiModal.WavLMBertFusion

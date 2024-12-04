@@ -22,6 +22,7 @@ sd.wait()
 write("record.mp3", frequency, recording)#запись голоса
 
 
+
 waveform, sample_rate = torchaudio.load("record.mp3", normalize=True)
 transform = torchaudio.transforms.Resample(sample_rate, 16000)
 waveform = transform(waveform)

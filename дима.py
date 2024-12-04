@@ -11,9 +11,6 @@ feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained("facebook/hubert-la
 model = HubertForSequenceClassification.from_pretrained("xbgoose/hubert-speech-emotion-recognition-russian-dusha-finetuned")
 num2emotion = {0: 'neutral', 1: 'angry', 2: 'positive', 3: 'sad', 4: 'other'}
 
-
-dfwgrvgv
-
 frequency = 44400
 duration = 2#сколько будеи идти запись
 recording = sd.rec(int(duration * frequency),

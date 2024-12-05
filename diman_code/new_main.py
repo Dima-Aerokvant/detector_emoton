@@ -4,9 +4,8 @@ from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
 import base64
-import pyaudio
-from scipy.io import wavfile#для аудио
-
+import io
+from pydub import AudioSegment
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -61,6 +60,7 @@ def uploadFrame(data):
     emit('rectangle_frame_update',b64_string)
     emit('send_frame', None)
     
+    
 
 @socketio.on('uploadResult')
 def emit_result(data):
@@ -82,18 +82,14 @@ def emit_result(data):
     data_now = data_template # чистим для запуска нового теста
 
 
-
 @socketio.on('uploadAudio')
-def uploadAudio(data):
-    print(data)
-    # recorded_data = np.fromstring(base64.b64decode(data), np.uint8)
-    # sample_rate = 16000
-    # recorded_data = [np.frombuffer(frame, dtype=np.int16) for frame in recorded_data]
-    # wav = np.concatenate(recorded_data, axis=0)
-    # wavfile.write('mic.wav', sample_rate, wav)
-    # text, emotions = moduls.audio_recognition(recorded_data)
-    # print(emotions)
-    # print(text)
+def uploadAudio(audio_data):
+    global data_now
+    audio_io = io.BytesIO(audio_data)
+    audio_segment = AudioSegment.from_file(audio_io, format='webm')# декодирум wav файл
+    audio_segment.export("mic.wav", format="wav") # записываем файл
+    data_now.audio_probabilities = moduls.audio_recognition_text('mic.wav')
+    print(data_now.audio_probabilities)
     
 
 @socketio.on('startRec')

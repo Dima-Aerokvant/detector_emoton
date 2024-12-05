@@ -1,5 +1,5 @@
-from aniemore.recognizers.multimodal import VoiceTextRecognizer
-from aniemore.utils.speech2text import SmallSpeech2Text
+from aniemore.recognizers.text import TextRecognizer
+from aniemore.recognizers.voice import VoiceRecognizer
 from aniemore.models import HuggingFaceModel# есть прикол что библеотеки нужно подключать в определеннном порядке иначе на длл будет ругаться
 from deepface import DeepFace
 import cv2
@@ -26,13 +26,9 @@ def frame_detection(img):
             return emotions, img 
     return None, img 
 
-def audio_recognition(file):
-    model = HuggingFaceModel.MultiModal.WavLMBertFusion
-    s2t_model = SmallSpeech2Text()
-
-    text = SmallSpeech2Text.recognize(file).text
+def audio_recognition_text(file):
+    model = HuggingFaceModel.Voice.WavLM
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    vtr = VoiceTextRecognizer(model=model, device=device)
-    res = vtr.recognize((file, text), return_single_label=False)
-    return text, res # возвращает текст и вероятности
+    vr = VoiceRecognizer(model=model, device=device)
+    res = vr.recognize(file, return_single_label=True)
+    return res

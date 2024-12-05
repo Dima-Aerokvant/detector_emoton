@@ -29,17 +29,6 @@
         </div>
         <div class="col">
           <img id="server"  class="rounded"   src="" width="320" height="240" style="background-color: grey" />
-          <script>
-            var socket = io()
-            var btnStart = false
-            const video = document.querySelector('video')
-            var stream = null
-            socket.on('rectangle_frame_update', function(data) { //рисуем картинку в выделенной зоной лица
-              console.log('img_rectangle')
-              var server_img = document.getElementById("server")
-              server_img.src = data
-            })
-          </script>
         </div>
       </div>
     </div>
@@ -47,28 +36,10 @@
     <!--Кнопка-->
     <div class="b-example-divider"></div>
     <div class="container text-center">  
+
       <div class="row g-15">
         <div class="col">
-            <script>
-                function clickStart() {
-                    if (btnStart) {
-                      document.getElementById("btnStart").classList.remove('btn-secondary');
-                      document.getElementById("btnStart").classList.add('btn-primary')
-                      btnStart = !btnStart;
-                      console.log("Конец обмена кадрами: ",btnStart)
-                      socket.emit('uploadResult', NaN) //запрос на получение данных обработки
-                    }
-                    else {
-                      document.getElementById("btnStart").classList.remove('btn-primary');
-                      document.getElementById("btnStart").classList.add('btn-secondary');
-                      btnStart = !btnStart;
-                      send_frame(NaN)
-                      console.log("Начало обмена кадрами: ",btnStart);
-                    }
-                    
-                }
-            </script>
-            <button type="button" id="btnStart" class="btn btn-primary" onclick="clickStart()">Запустить</button>
+          <button type="button" id="btnStart" class="btn btn-primary" onclick="clickStart()">Запустить</button>
         </div>
       </div>
     </div>
@@ -139,6 +110,25 @@
 
     <!--Скрипт-->
     <script>
+      // Grab elements, create settings, etc.
+      //var video = document.createElement('video');
+      var server = document.getElementById("server");
+      var socket = io();
+      var canvas = document.createElement('canvas')
+      var btnStart = false;
+      canvas.width = 320
+      canvas.height = 240
+      var context = canvas.getContext('2d');
+      let videoSender;
+      var voice;
+      let mediaRecorder;
+      let x = [1,2,3,4,5,6,7]
+      let video_td = document.querySelectorAll('.video-td');
+       
+      video_td.forEach((el, i) => el.textContent = x[i]);
+
+      var fps = 0
+
       if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
               navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function(stream) {
               video.srcObject = stream; 
@@ -148,18 +138,54 @@
           });
       }
 
-      function send_frame(data){
-        if(btnStart){
-          console.log('Send frame')
-          var canvas = document.createElement('canvas')
-          canvas.width = 320
-          canvas.height = 240
-          var context = canvas.getContext('2d')
-          context.drawImage(video, 0, 0, 320, 240); // better use size because camera may gives data in different size then <video> is displaying
-          socket.emit('upload_frame', {'data': canvas.toDataURL('image/jpeg',0.99)})
+      function clickStart() {
+        if (btnStart) {
+          document.getElementById("btnStart").classList.remove('btn-secondary');
+          document.getElementById("btnStart").classList.add('btn-primary');
+
+          mediaRecorder.stop();
+          clearInterval(videoSender);
+
+          const voiceBlob = new Blob(voice, {
+              type: 'audio/wav'
+          });
+          socket.emit('uploadAudio', {data: voiceBlob})
+          voice = []
+          socket.emit('uploadResult', NaN)
+          console.log("upld result")
+
         }
+        else {
+          document.getElementById("btnStart").classList.remove('btn-primary');
+          document.getElementById("btnStart").classList.add('btn-secondary');
+
+          videoSender = window.setInterval(function() {
+                  console.log("send")
+                  context.drawImage(video, 0, 0, 320, 240); // better use size because camera may gives data in different size then <video> is displaying
+                  socket.emit('uploadFrame', {'data': canvas.toDataURL('image/jpeg',0.99) , 'pulse': fps})
+              }, 500);
+
+          
+          mediaRecorder.start();
+
+          mediaRecorder.addEventListener("dataavailable",function(event) {
+              voice.push(event.data);
+          });
+        }
+        console.log(btnStart);
+        btnStart = !btnStart;
+        socket.emit('startRec', {data: btnStart})
       }
-      socket.on('send_frame',send_frame)
+
+      socket.on('send_list', function(data) {
+              console.log(data[0])
+              console.log(data[1])
+              console.log(data[2])
+          })
+
+      socket.on('my_response', function(data) {
+              server.src = data
+          });
 
       socket.on('chart_update', function(data) {/*Рисум значения в графиках*/
           console.log(data)

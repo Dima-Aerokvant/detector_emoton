@@ -6,7 +6,9 @@ import cv2
 import torch
 import yarppg
 
-rppg = yarppg.Rppg()
+rppg = yarppg.Rppg(hr_calc= yarppg.PeakBasedHrCalculator(
+    fs=30, window_seconds=5, distance=0.6, update_interval=1
+))#уменьшаем буффер
 
 def frame_detection(img):
     faceCascade= cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")

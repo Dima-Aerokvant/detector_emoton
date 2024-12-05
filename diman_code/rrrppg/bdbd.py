@@ -9,9 +9,10 @@ import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
-rppg = yarppg.Rppg()
+hrcalc = yarppg.PeakBasedHrCalculator(
+    fs=30, window_seconds=1, distance=0.6, update_interval=30
+)
+rppg = yarppg.Rppg(hr_calc=hrcalc)
 
 # while running:
 #     # frame = ...  # get an image array of shape h x w x 3

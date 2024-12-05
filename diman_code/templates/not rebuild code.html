@@ -26,26 +26,19 @@
       <div class="row">
         <div class="col">
           <video id="video" class="rounded" width="320" height="240"></video>
-          <script>
-            const video = document.querySelector('video')
-            var stream = null
-            navigator.mediaDevices.getUserMedia({ video: true}).then(function(stream) {
-              video.srcObject = stream
-              video.play()
-            })
-            video.addEventListener('timeupdate', async function(ev){
-              await send_frame()
-            })
-            
-          </script>
         </div>
         <div class="col">
           <img id="server"  class="rounded"   src="" width="320" height="240" style="background-color: grey" />
           <script>
-            function update_rectangle(img){
+            var socket = io()
+            var btnStart = false
+            const video = document.querySelector('video')
+            var stream = null
+            socket.on('rectangle_frame_update', function(data) { //рисуем картинку в выделенной зоной лица
+              console.log('img_rectangle')
               var server_img = document.getElementById("server")
-              server_img.src = img
-            }
+              server_img.src = data
+            })
           </script>
         </div>
       </div>
@@ -66,12 +59,13 @@
                       btnStart = !btnStart;
                       console.log("Конец обмена кадрами: ",btnStart)
                       mediaRecorder.stop()
-                      // socket.emit('uploadResult', NaN) //запрос на получение данных обработки
+                      socket.emit('uploadResult', NaN) //запрос на получение данных обработки
                     }
                     else {
                       document.getElementById("btnStart").classList.remove('btn-primary');
                       document.getElementById("btnStart").classList.add('btn-secondary');
                       btnStart = !btnStart;
+                      send_frame(NaN)
                       console.log("Начало обмена кадрами: ",btnStart)
                       startRecording()
                     }
@@ -88,7 +82,7 @@
                             mediaRecorder.onstop = function() {
                                 var audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                                 audioChunks = []; // Очистить массив
-                                // socket.emit('uploadAudio', audioBlob); // Отправить аудиофайл на сервер
+                                socket.emit('uploadAudio', audioBlob); // Отправить аудиофайл на сервер
                                 console.log('Аудиофайл отправлен на сервер');
                             };
                         });
@@ -165,27 +159,32 @@
 
     <!--Скрипт-->
     <script>
-      var socket = io()
-      var btnStart = false
+      var mediaRecorder
       var voice = []
 
-      async function send_frame(){
+
+      if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function(stream) {
+          video.srcObject = stream
+          video.play()
+
+          })
+        }
+
+
+      function send_frame(data){
         if(btnStart){
+          // console.log('Send frame')
           var canvas = document.createElement('canvas')
           canvas.width = 320
           canvas.height = 240
           var context = canvas.getContext('2d')
           context.drawImage(video, 0, 0, 320, 240)
-          var response = await fetch('/upload_frame', {
-            headers : {'Content-Type' : 'application/json'},
-            method: 'POST',
-            body:  JSON.stringify({'data': canvas.toDataURL('image/jpeg',0.99)})
-          });
-          var resp = await response.json()
-          update_rectangle(resp['data'])
+          socket.emit('upload_frame', {'data': canvas.toDataURL('image/jpeg',0.99)})
         }
       }
-      
+      socket.on('send_frame',send_frame)
+
       socket.on('chart_update', function(data) {/*Рисум значения в графиках*/
           console.log(data)
           var series_aud = chart_aud.column(data['series_aud'])

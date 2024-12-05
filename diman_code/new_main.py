@@ -1,5 +1,5 @@
 import moduls
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
@@ -34,15 +34,14 @@ def file():
 def settings():
     return render_template('settings.html')
 
-@socketio.on('upload_frame')
-def uploadFrame(data):
+@app.route('/upload_frame', methods=["GET", "POST"])
+def upload_frame():
+    data = request.get_json()
     global data_now # без глобала не видит дата_нау
-
     encoded_data = data["data"].split(',')[1]
     nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)#Раскодировали дату
 
-    
     emotions, img_rec = moduls.frame_detection(img)
     if(emotions):
       for emotion in emotions:
@@ -57,8 +56,8 @@ def uploadFrame(data):
     jpg_img = cv2.imencode('.jpg', img_rec)
     b64_string = base64.b64encode(jpg_img[1]).decode('utf-8')
     b64_string = "data:image/jpg;base64," + b64_string
-    emit('rectangle_frame_update',b64_string)
-    emit('send_frame', None)
+    return jsonify({'data':b64_string})
+    
     
     
 

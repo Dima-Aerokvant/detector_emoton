@@ -50,12 +50,15 @@
       <div class="row g-15">
         <div class="col">
             <script>
+                var mediaRecorder;
+                var audioChunks = [];
                 function clickStart() {
                     if (btnStart) {
                       document.getElementById("btnStart").classList.remove('btn-secondary');
                       document.getElementById("btnStart").classList.add('btn-primary')
                       btnStart = !btnStart;
                       console.log("Конец обмена кадрами: ",btnStart)
+                      mediaRecorder.stop()
                       socket.emit('uploadResult', NaN) //запрос на получение данных обработки
                     }
                     else {
@@ -63,10 +66,27 @@
                       document.getElementById("btnStart").classList.add('btn-secondary');
                       btnStart = !btnStart;
                       send_frame(NaN)
-                      console.log("Начало обмена кадрами: ",btnStart);
+                      console.log("Начало обмена кадрами: ",btnStart)
+                      startRecording()
                     }
-                    
                 }
+                function startRecording() {
+                        navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+                            mediaRecorder = new MediaRecorder(stream)
+                            mediaRecorder.start()
+
+                            mediaRecorder.ondataavailable = function(event) {
+                                audioChunks.push(event.data)
+                            };
+
+                            mediaRecorder.onstop = function() {
+                                var audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                                audioChunks = []; // Очистить массив
+                                socket.emit('uploadAudio', audioBlob); // Отправить аудиофайл на сервер
+                                console.log('Аудиофайл отправлен на сервер');
+                            };
+                        });
+                    }
             </script>
             <button type="button" id="btnStart" class="btn btn-primary" onclick="clickStart()">Запустить</button>
         </div>
@@ -139,23 +159,27 @@
 
     <!--Скрипт-->
     <script>
+      var mediaRecorder
+      var voice = []
+
+
       if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-              navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function(stream) {
-              video.srcObject = stream; 
-              video.play();
-              mediaRecorder = new MediaRecorder(stream);     
-              fps = stream.getVideoTracks()[0].getSettings().frameRate          
-          });
-      }
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function(stream) {
+          video.srcObject = stream
+          video.play()
+
+          })
+        }
+
 
       function send_frame(data){
         if(btnStart){
-          console.log('Send frame')
+          // console.log('Send frame')
           var canvas = document.createElement('canvas')
           canvas.width = 320
           canvas.height = 240
           var context = canvas.getContext('2d')
-          context.drawImage(video, 0, 0, 320, 240); // better use size because camera may gives data in different size then <video> is displaying
+          context.drawImage(video, 0, 0, 320, 240)
           socket.emit('upload_frame', {'data': canvas.toDataURL('image/jpeg',0.99)})
         }
       }
@@ -174,7 +198,7 @@
 
           var series_pulse = chart_pulse.line(data['series_pulse'])
           chart_pulse.draw()
-      });    
+      })   
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

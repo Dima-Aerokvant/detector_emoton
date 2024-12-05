@@ -26,13 +26,13 @@ def frame_detection(img):
             return emotions, img 
     return None, img 
 
-def audio_recognition(file_path):
+def audio_recognition(file):
     model = HuggingFaceModel.MultiModal.WavLMBertFusion
     s2t_model = SmallSpeech2Text()
 
-    text = SmallSpeech2Text.recognize(file_path).text
+    text = SmallSpeech2Text.recognize(file).text
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     vtr = VoiceTextRecognizer(model=model, device=device)
-    res = vtr.recognize((file_path, text), return_single_label=False)
+    res = vtr.recognize((file, text), return_single_label=False)
     return text, res # возвращает текст и вероятности

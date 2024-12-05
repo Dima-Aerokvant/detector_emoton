@@ -4,6 +4,8 @@ from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
 import base64
+import pyaudio
+from scipy.io import wavfile#для аудио
 
 
 app = Flask(__name__)
@@ -84,6 +86,15 @@ def emit_result(data):
 @socketio.on('uploadAudio')
 def uploadAudio(data):
     print(data)
+    # recorded_data = np.fromstring(base64.b64decode(data), np.uint8)
+    # sample_rate = 16000
+    # recorded_data = [np.frombuffer(frame, dtype=np.int16) for frame in recorded_data]
+    # wav = np.concatenate(recorded_data, axis=0)
+    # wavfile.write('mic.wav', sample_rate, wav)
+    # text, emotions = moduls.audio_recognition(recorded_data)
+    # print(emotions)
+    # print(text)
+    
 
 @socketio.on('startRec')
 def startRec(data):

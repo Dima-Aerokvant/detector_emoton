@@ -66,7 +66,6 @@
                       btnStart = !btnStart;
                       console.log("Конец обмена кадрами: ",btnStart)
                       mediaRecorder.stop()
-                      // socket.emit('uploadResult', NaN) //запрос на получение данных обработки
                     }
                     else {
                       document.getElementById("btnStart").classList.remove('btn-primary');
@@ -85,10 +84,10 @@
                                 audioChunks.push(event.data)
                             };
 
-                            mediaRecorder.onstop = function() {
+                            mediaRecorder.onstop = async function() {
                                 var audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                                 audioChunks = []; // Очистить массив
-                                // socket.emit('uploadAudio', audioBlob); // Отправить аудиофайл на сервер
+                                await send_audio(audioBlob)
                                 console.log('Аудиофайл отправлен на сервер');
                             };
                         });
@@ -169,6 +168,16 @@
       var btnStart = false
       var voice = []
 
+      async function send_audio(audio){
+        console.log(audio)
+        var response = await fetch('/upload_audio', {
+            headers : {'Content-Type' : 'application/json'},
+            method: 'POST',
+            body:  JSON.stringify(audio)
+          });
+          var resp = await response
+      }
+
       async function send_frame(){
         if(btnStart){
           var canvas = document.createElement('canvas')
@@ -186,7 +195,7 @@
         }
       }
       
-      socket.on('chart_update', function(data) {/*Рисум значения в графиках*/
+       function draw_charts(data){/*Рисум значения в графиках*/
           console.log(data)
           var series_aud = chart_aud.column(data['series_aud'])
           chart_aud.draw()
@@ -199,7 +208,7 @@
 
           var series_pulse = chart_pulse.line(data['series_pulse'])
           chart_pulse.draw()
-      })   
+      }   
 
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

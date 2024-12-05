@@ -61,8 +61,8 @@ def upload_frame():
     
     
 
-@socketio.on('uploadResult')
-def emit_result(data):
+@app.route('/upload_result', methods=["GET", "POST"])
+def emit_result():
     global data_now# без глобала не видит дата_нау
     video_probab =[]
     audio_probab = []
@@ -77,18 +77,23 @@ def emit_result(data):
     for i in range(len(data_now.pulse_line)):
         series_pulse.append([i+1,data_now.pulse_line[i]])
     send = {'series_aud' : audio_probab, 'series_vid' : video_probab,'series_txt' : text_probab,'series_pulse':series_pulse}
-    emit('chart_update', send)
     data_now = data_template # чистим для запуска нового теста
+    return jsonify({'data':send})
+    
 
 
-@socketio.on('uploadAudio')
-def uploadAudio(audio_data):
+@app.route('/upload_audio', methods=["GET", "POST"])
+def uploadAudio():
+    print('wew')
+    audio_data = request.get_json()
+    print(audio_data)
     global data_now
     audio_io = io.BytesIO(audio_data)
     audio_segment = AudioSegment.from_file(audio_io, format='webm')# декодирум wav файл
     audio_segment.export("mic.wav", format="wav") # записываем файл
     data_now.audio_probabilities = moduls.audio_recognition_text('mic.wav')
     print(data_now.audio_probabilities)
+    return 
     
 
 @socketio.on('startRec')

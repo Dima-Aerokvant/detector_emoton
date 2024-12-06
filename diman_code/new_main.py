@@ -82,19 +82,16 @@ def emit_result():
     
 
 
-@app.route('/upload_audio', methods=["GET", "POST"])
-def uploadAudio():
-    print('wew')
-    audio_data = request.get_json()
-    print(audio_data)
+@app.route('/upload_audio', methods=["POST"])
+def upload_audio():
     global data_now
-    audio_io = io.BytesIO(audio_data)
-    audio_segment = AudioSegment.from_file(audio_io, format='webm')# декодирум wav файл
-    audio_segment.export("mic.wav", format="wav") # записываем файл
-    data_now.audio_probabilities = moduls.audio_recognition_text('mic.wav')
+    audio_file = request.files['audio']  # Получаем файл из запроса
+    audio_io = io.BytesIO(audio_file.read())  # Читаем файл в BytesIO
+    audio_segment = AudioSegment.from_file(audio_io, format='webm')  # Декодируем файл
+    audio_segment.export("mic.wav", format="wav")  # Сохраняем файл как WAV
+    data_now.audio_probabilities = moduls.audio_recognition_text('mic.wav')  # Обработка аудио
     print(data_now.audio_probabilities)
-    return 
-    
+    return jsonify({'status': 'Audio processed'})    
 
 @socketio.on('startRec')
 def startRec(data):

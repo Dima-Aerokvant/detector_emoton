@@ -17,7 +17,7 @@ def frame_detection(img):
     for (x,y,w,h) in faces:                                                               
             cv2.rectangle(img,(x,y),(x+w,y+h),(36,255,12),4)
             img2 = img[y:y+h, x:x+w]
-            objs = DeepFace.analyze(                                                                #вывод результата
+            objs = DeepFace.analyze(                                                                #
                 img_path = img2,
                 actions = ['emotion'],
                 enforce_detection=False
@@ -30,5 +30,5 @@ def audio_recognition_text(file):
     model = HuggingFaceModel.Voice.WavLM
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     vr = VoiceRecognizer(model=model, device=device)
-    res = vr.recognize(file, return_single_label=True)
+    res = vr.recognize(file, return_single_label=False)
     return res

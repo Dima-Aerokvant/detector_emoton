@@ -178,7 +178,8 @@
             method: 'POST',
             body:  formData 
           });
-          var resp = await response
+          var resp = await response.json()
+          draw_charts(resp['data'])
       }
 
       async function send_frame(vidio_send){

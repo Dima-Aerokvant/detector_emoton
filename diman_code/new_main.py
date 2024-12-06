@@ -11,13 +11,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
-class data_template:
+class data_template():
     video_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}
-    audio_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}# данные обработки всех модулей остаются на сервере
-    text_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}
+    audio_probabilities = {}
+    text_probabilities = {}
     pulse_line = []
 
-data_now = data_template
+data_now = data_template()
 
 
 @app.route('/')
@@ -61,9 +61,7 @@ def upload_frame():
     
     
 
-@app.route('/upload_result', methods=["GET", "POST"])
-def emit_result():
-    global data_now# без глобала не видит дата_нау
+def emit_result(data_now):
     video_probab =[]
     audio_probab = []
     text_probab = []
@@ -71,12 +69,13 @@ def emit_result():
     for emotion in data_now.video_probabilities:
         video_probab.append([str(emotion), int(data_now.video_probabilities[emotion])]) # переделываем словарь в массив нужна для вывода в диограммы
     for emotion in data_now.audio_probabilities:
-        audio_probab.append([str(emotion), int(data_now.audio_probabilities[emotion])])  
+        audio_probab.append([str(emotion), int(data_now.audio_probabilities[emotion]*100)]) # на выхоже получаем дробь а не проценты нопример 0,215  
     for emotion in data_now.text_probabilities:
-        text_probab.append([str(emotion), int(data_now.text_probabilities[emotion])])
+        text_probab.append([str(emotion), int(data_now.text_probabilities[emotion]*100)])
     for i in range(len(data_now.pulse_line)):
-        series_pulse.append([i+1,data_now.pulse_line[i]])
+        series_pulse.append([data_now.pulse_line[i], i+1])
     send = {'series_aud' : audio_probab, 'series_vid' : video_probab,'series_txt' : text_probab,'series_pulse':series_pulse}
+    print(send)
     data_now = data_template # чистим для запуска нового теста
     return jsonify({'data':send})
     
@@ -89,9 +88,12 @@ def upload_audio():
     audio_io = io.BytesIO(audio_file.read())  # Читаем файл в BytesIO
     audio_segment = AudioSegment.from_file(audio_io, format='webm')  # Декодируем файл
     audio_segment.export("mic.wav", format="wav")  # Сохраняем файл как WAV
+
     data_now.audio_probabilities = moduls.audio_recognition_text('mic.wav')  # Обработка аудио
-    print(data_now.audio_probabilities)
-    return jsonify({'status': 'Audio processed'})    
+    data_now.text_probabilities = moduls.text_recognition('mic.wav')  # Обработка аудио
+
+    send = emit_result(data_now)
+    return send
 
 @socketio.on('startRec')
 def startRec(data):

@@ -45,16 +45,16 @@
                   mediaRecorder = new MediaRecorder(stream)
                   mediaRecorder.start()
 
-                  mediaRecorder.ondataavailable = function(event) {
+                  mediaRecorder.addEventListener("dataavailable", event => {
                       audioChunks.push(event.data)
-                  };
+                  })
 
                   mediaRecorder.onstop = async function() {
                       audioBlob = new Blob(audioChunks, { type:'audio/webm' });
                       await send_audio(audioBlob)
                       console.log('Аудиофайл отправлен на сервер');
-                  };
-              });
+                  }
+              })
             }
 
             
@@ -110,6 +110,22 @@
 
     <!--Создаем 3 графика для вывода вероятностей-->
     <div class="card" style= "width: 100; height: 100">
+      <script>
+        function draw_charts(data){//функции для отображения данных на графике
+          console.log(data)
+          var series_aud = chart_aud.column(data['series_aud'])
+          chart_aud.draw()
+
+          var series_vid = chart_vid.column(data['series_vid'])
+          chart_vid.draw()
+
+          var series_txt = chart_txt.column(data['series_txt'])
+          chart_txt.draw()
+
+          var series_pulse = chart_pulse.line(data['series_pulse'])
+          chart_pulse.draw()
+      }   
+      </script>
       <div class="row">
           <div class = "col">
             <div id="chart_audio">
@@ -169,14 +185,12 @@
 
     <!--Скрипт-->
     <script>
-      var socket = io()
-      var btnStart = false
       async function send_audio(audio){
         const formData = new FormData();
-        formData.append('audio', audio, 'audio.webm'); // Укажите имя файла и его расширение
+        formData.append('audio', audio, 'audio.webm');
         var response = await fetch('/upload_audio', {
             method: 'POST',
-            body:  formData 
+            body:  formData //отправить аудио файл как json нельзя, json не позволяет так сделать
           });
           var resp = await response.json()
           draw_charts(resp['data'])
@@ -192,28 +206,12 @@
           var response = await fetch('/upload_frame', {
             headers : {'Content-Type' : 'application/json'},
             method: 'POST',
-            body:  JSON.stringify({'data': canvas.toDataURL('image/jpeg',0.99)})
-          });
+            body:  JSON.stringify({'data': canvas.toDataURL('image/jpeg',0.99)})// здесть т.к. картинка закодирована можно ее отправить на сервер как json
+          });//отправка данных на бекэнд через json работает лучше чем отправка без json
           var resp = await response.json()
           update_rectangle(resp['data'])
         }
       }
-      
-      function draw_charts(data){/*Рисум значения в графиках*/
-          console.log(data)
-          var series_aud = chart_aud.column(data['series_aud'])
-          chart_aud.draw()
-
-          var series_vid = chart_vid.column(data['series_vid'])
-          chart_vid.draw()
-
-          var series_txt = chart_txt.column(data['series_txt'])
-          chart_txt.draw()
-
-          var series_pulse = chart_pulse.line(data['series_pulse'])
-          chart_pulse.draw()
-      }   
-
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   </body>

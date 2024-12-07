@@ -41,7 +41,6 @@
             })// все что написано до для видоса
             
             function startRecording() {// для видоса
-              navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
                   mediaRecorder = new MediaRecorder(stream)
                   mediaRecorder.start()
 
@@ -54,7 +53,7 @@
                       await send_audio(audioBlob)
                       console.log('Аудиофайл отправлен на сервер');
                   }
-              })
+              
             }
 
             
@@ -80,6 +79,7 @@
       <div class="row g-15">
         <div class="col">
             <script>
+                btnStart=false
                 function clickStart() {
                     if (btnStart) {
                       document.getElementById("btnStart").classList.remove('btn-secondary');

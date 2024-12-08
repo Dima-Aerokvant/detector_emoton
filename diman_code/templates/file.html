@@ -72,11 +72,14 @@
                   }       
                   var formData = new FormData()
                   formData.append('video', fileInput.files[0], "video.mp4")           
-                  var response = await fetch('/upload_file', {
+                  var response = await fetch('/processing_file', {//отправляем файл на обработку
                     method: 'POST',
                     body:  formData 
                   });
-                  var resp = await response.json()
+                  var resp = await response.json()// ждем ответы обработки
+                  console.log(resp)
+                  //здесь должна быть функция отрисовки таблиц в значениях с аргуметом resp
+                  // или писать мудреную для таблиц или взять готовую со страницы олайн но с заменой таблиц на графики
                 }
 
 

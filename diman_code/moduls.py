@@ -28,7 +28,7 @@ def frame_detection(img):
             return emotions, img 
     return None, img 
 
-def audio_recognition_text(file):
+def audio_recognition(file):
     model = HuggingFaceModel.Voice.WavLM
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     vr = VoiceRecognizer(model=model, device=device)

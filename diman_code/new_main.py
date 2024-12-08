@@ -7,10 +7,14 @@ import base64
 import io
 from pydub import AudioSegment
 from threading import Thread
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
+
+UPLOAD_FOLDER = 'uploads' 
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 class data_template():
     video_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}
@@ -88,17 +92,33 @@ def result_moduls(data_now):
 @app.route('/upload_audio', methods=["POST"])
 def upload_audio():
     global data_now
+
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
     audio_file = request.files['audio']  # Получаем файл из запроса
     audio_io = io.BytesIO(audio_file.read())  # Читаем файл в BytesIO
     audio_segment = AudioSegment.from_file(audio_io, format='webm')  # Декодируем файл
-    audio_segment.export("mic.wav", format="wav")  # Сохраняем файл как WAV
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_file.filename)     # Сохраняем файл
+    audio_segment.export(file_path , format="wav")
 
-    data_now.audio_probabilities = moduls.audio_recognition_text('mic.wav')  # Обработка аудио
-    data_now.text_probabilities = moduls.text_recognition('mic.wav')  # Обработка текст
-
+    data_now.audio_probabilities = moduls.audio_recognition_text(file_path)  # Обработка аудио
+    data_now.text_probabilities = moduls.text_recognition(file_path)  # Обработка текст
 
     send = result_moduls(data_now)
     return send
+
+@app.route('/upload_file', methods=["POST"])
+def upload_file():
+    if 'video' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    video_file = request.files['video']  # Получаем файл из запроса
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], video_file.filename)     # Сохраняем файл
+    video_file.save(file_path)  # Сохраняем файл на сервере
+
+    print(f"File saved to {file_path}")
+    return jsonify({'data': "ok", 'filename': video_file.filename}), 200
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

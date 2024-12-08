@@ -25,7 +25,7 @@
     <!--Навигация-->
     <div class="container">
         <header class="d-flex justify-content-center py-3">
-          <ul class="nav nav-pills">
+          <ul class="nav nav-pills rounded-4 overflow-hidden" style="background-color: #e3f2fd;">
             <li class="nav-item"><a href="" class="nav-link active" aria-current="page">С камеры</a></li>
             <li class="nav-item"><a href="file" class="nav-link">Из файла</a></li>
             <li class="nav-item"><a href="settings" class="nav-link">Настройки</a></li>
@@ -112,14 +112,17 @@
         </div>
       </div>
     </div>
-
+    <!--Отступ-->
+    <table>
+      <tr style="height: 100px"></tr>
+    </table>
     <!--Преобладающая эмоция-->
     <div class="container text-center">  
       <p class="fw-semibold">Преобладающая эмоция:</p> <p></p>
     </div>
 
     <!--Создаем 3 графика для вывода вероятностей-->
-    <div class="card" >
+    <div class="card rounded-4 overflow-hidden" >
       <script>
 
         function draw_charts(data){//функции для отображения данных на графике

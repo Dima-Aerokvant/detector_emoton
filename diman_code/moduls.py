@@ -8,9 +8,19 @@ import cv2
 import torch
 import yarppg
 
-rppg = yarppg.Rppg(hr_calc=yarppg.PeakBasedHrCalculator(
-    fs=30, window_seconds=0.5, distance=0.4, update_interval=1 # вроде после 15 кадров начинает определять пульс 
-))#пендос библеотеку сделал а написать что означают эти параметры нет
+rppg = yarppg.Rppg()
+
+def file_pulse_detect(file_path):
+  fps = yarppg.get_video_fps(file_path)
+  filter_cfg = yarppg.digital_filter.FilterConfig(fps, 0.5, 1.5, btype="bandpass")
+  livefilter = yarppg.digital_filter.make_digital_filter(filter_cfg)
+  processor = yarppg.FilteredProcessor(yarppg.Processor(), livefilter=livefilter)
+  results = rppg.process_video(file_path)
+  res = []
+  for elem in results:
+    if(60 * fps / elem.hr > 60):
+        res.append(60 * fps / elem.hr)
+  return res
 
 def frame_detection(img):
     faceCascade= cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")

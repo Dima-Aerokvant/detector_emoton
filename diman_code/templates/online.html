@@ -40,6 +40,7 @@
           <script>
             var audioBlob
             var audioChunks = [];
+            var now_frame = 10;
             const video = document.querySelector('video')
             var stream_video = null
             var stream_audio = null
@@ -49,7 +50,12 @@
               video.play()
 
               video.addEventListener('timeupdate', async function(ev){
-                await send_frame(video)
+                await send_frame_yarppg(video)//ускоряем заполнение буффера yarppg
+                if(now_frame === 10){
+                  await send_frame_deepface(video)
+                  now_frame=0
+                }
+                now_frame+=1
               })
             })
             function startRecording() {
@@ -122,9 +128,22 @@
     </div>
 
     <!--Создаем 3 графика для вывода вероятностей-->
-    <div class="card rounded-4 overflow-hidden" >
+    <div class="card rounded-4 overflow-hidden" style="height: 500px" >
       <script>
-
+        function isEmpty(map) {
+          for(var key in map) {
+            if (map.hasOwnProperty(key)) {
+                return false;
+            }
+          }
+          return true;
+        }
+        pulse = anychart.data.set([]);
+        function draw_chart_pulse(dota){
+          if(!isEmpty(dota)){
+            pulse.append(dota)
+          }
+        }
         function draw_charts(data){//функции для отображения данных на графике
           console.log(data)
           var series_aud = chart_aud.column(data['series_aud'])
@@ -135,65 +154,57 @@
 
           var series_txt = chart_txt.column(data['series_txt'])
           chart_txt.draw()
-
-          var series_pulse = chart_pulse.line(data['series_pulse'])
-          chart_pulse.draw()
       }   
       </script>
-      <div class="row">
-          <div class = "col">
-            <div id="chart_audio">
-              <script> 
-                var chart_aud = anychart.column();
-                var series_aud = chart_aud.column();
-                chart_aud.xAxis().title("эмоция");
-                chart_aud.yAxis().title("вероятности");
-                chart_aud.title("эмоция по аудио");
-                chart_aud.container("chart_audio");
-                chart_aud.draw();
-              </script>
-            </div>
-          </div>
-
-          <div class = "col">
-            <div id="chart_video">
-              <script> 
-                var chart_vid = anychart.column();
-                var series_vid = chart_vid.column();
-                chart_vid.xAxis().title("эмоция");
-                chart_vid.yAxis().title("вероятности");
-                chart_vid.title("эмоция по видео");
-                chart_vid.container("chart_video");
-                chart_vid.draw();
-              </script>
-            </div>
-          </div>
-
-          <div class = "col">
-            <div id="chart_txt">
-              <script> 
-                var chart_txt = anychart.column();
-                var series_txt = chart_vid.column();
-                chart_txt.xAxis().title("эмоция");
-                chart_txt.yAxis().title("вероятности");
-                chart_txt.title("эмоция по содержанию речи");
-                chart_txt.container("chart_txt");
-                chart_txt.draw();
-              </script>
-            </div>
-          </div>
-
+      <div class="row" style="height: 250px">
+        <div class="col" id="chart_audio" style="height: 250px">
+            <script> 
+              var chart_aud = anychart.column();
+              var series_aud = chart_aud.column();
+              chart_aud.xAxis().title("эмоция");
+              chart_aud.yAxis().title("вероятности");
+              chart_aud.title("эмоция по аудио");
+              chart_aud.container("chart_audio");
+              chart_aud.draw();
+            </script>
+        </div>
+        <div class="col" id = "chart_video" style="height: 250px">
+          <script> 
+            var chart_vid = anychart.column();
+            var series_vid = chart_vid.column();
+            chart_vid.xAxis().title("эмоция");
+            chart_vid.yAxis().title("вероятности");
+            chart_vid.title("эмоция по видео");
+            chart_vid.container("chart_video");
+            chart_vid.draw();
+          </script>
+        </div>   
       </div>
-    <div class="row" style= " height: 100px">
-      <div id="chart_puls">
-        <script>
-          var chart_pulse = anychart.line()
-          var series_pulse = chart_pulse.line();
-          chart_pulse.container("chart_puls")
-          chart_pulse.draw()
-        </script>
-      </div>
-    </div>
+      <div class="row" style="height: 250px">
+        <div class="col" id = "chart_txt" style="height: 250px">
+          <script> 
+            var chart_txt = anychart.column();
+            var series_txt = chart_txt.column();
+            chart_txt.xAxis().title("эмоция");
+            chart_txt.yAxis().title("вероятности");
+            chart_txt.title("эмоция по содержанию речи");
+            chart_txt.container("chart_txt");
+            chart_txt.draw();
+          </script>
+        </div>
+        <div class="col" id = "chart_puls" style="height: 250px">
+          <script>
+            var chart_pulse = anychart.line()
+            var series_pulse = chart_pulse.line(pulse);
+            chart_pulse.xAxis().title("кадр");
+            chart_pulse.yAxis().title("Пульс");
+            chart_pulse.container("chart_puls")
+            chart_pulse.draw()
+          </script>
+        </div>
+      </div>  
+      
+
   </div>
   </body>    
 
@@ -209,15 +220,31 @@
           var resp = await response.json()
           draw_charts(resp['data'])
       }
-
-      async function send_frame(vidio_send){
+      async function send_frame_yarppg(vidio_send){
         if(btnStart){
           var canvas = document.createElement('canvas')
           canvas.width = 320
           canvas.height = 240
           var context = canvas.getContext('2d')
           context.drawImage(vidio_send, 0, 0, 320, 240)
-          var response = await fetch('/upload_frame', {
+          var response = await fetch('/upload_frame_yarppg', {
+            headers : {'Content-Type' : 'application/json'},
+            method: 'POST',
+            body:  JSON.stringify({'data': canvas.toDataURL('image/jpeg',0.99)})// здесть т.к. картинка закодирована можно ее отправить на сервер как json
+          });//отправка данных на бекэнд через json работает лучше чем отправка без json
+          var resp = await response.json()
+          console.log(resp['data']) 
+          draw_chart_pulse(resp['data'])
+        }
+      } 
+      async function send_frame_deepface(vidio_send){
+        if(btnStart){
+          var canvas = document.createElement('canvas')
+          canvas.width = 320
+          canvas.height = 240
+          var context = canvas.getContext('2d')
+          context.drawImage(vidio_send, 0, 0, 320, 240)
+          var response = await fetch('/upload_frame_deepface', {
             headers : {'Content-Type' : 'application/json'},
             method: 'POST',
             body:  JSON.stringify({'data': canvas.toDataURL('image/jpeg',0.99)})// здесть т.к. картинка закодирована можно ее отправить на сервер как json

@@ -22,57 +22,10 @@ class data_template():
     audio_probabilities = {}
     text_probabilities = {}
     pulse_line = []
+    
 
+now_frame_pulse = 0
 data_now = data_template()
-
-# эти функции будут одновременно
-#проблема в том что функция запущенная в потоке не може вернуть результат, поэтому пишем так и сохраняем данные в глобальную переменную
-def processing_audio(file_path):
-    global data_now
-    data_now.audio_probabilities = moduls.audio_recognition(file_path)
-    
-def processing_text(file_path):    
-    global data_now
-    data_now.text_probabilities = moduls.text_recognition(file_path)
-
-@app.route('/')
-def index():
-    return redirect(url_for('online'))
-
-@app.route('/online')
-def online():
-    return render_template('online.html')
-@app.route('/file')
-def file():
-    return render_template('file.html')
-@app.route('/settings')
-def settings():
-    return render_template('settings.html')
-
-@app.route('/upload_frame', methods=["GET", "POST"])
-def upload_frame():
-    data = request.get_json()
-    global data_now # без глобала не видит дата_нау
-    encoded_data = data["data"].split(',')[1]
-    nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)#Раскодировали дату
-
-    emotions, img_rec = moduls.frame_detection(img)
-    if(emotions):
-      for emotion in emotions:
-          data_now.video_probabilities[emotion] = (data_now.video_probabilities[emotion]+emotions[emotion])/2
-
-    result = moduls.rppg.process_frame(img)
-    bpm =  60 * 30 / result.hr
-    if(bpm > 60):
-        data_now.pulse_line.append(result.hr)
-    print(bpm)# первые 300 кадров он пишет нан. нужно как то изменить размер буферра https://samproell.github.io/yarppg/deepdive/ 
-
-    jpg_img = cv2.imencode('.jpg', img_rec)
-    b64_string = base64.b64encode(jpg_img[1]).decode('utf-8')
-    b64_string = "data:image/jpg;base64," + b64_string
-    return jsonify({'data':b64_string}) # отправляем картинку с выделенной зоной интереса
-    
 
 def result_moduls(data_now):
     video_probab =[]
@@ -90,14 +43,75 @@ def result_moduls(data_now):
         text_probab.append([str(emotion), int(data_now.text_probabilities[emotion]*100)])
 
     for i in range(len(data_now.pulse_line)):
-        series_pulse.append([data_now.pulse_line[i], i+1])
+        series_pulse.append([i, series_pulse[i]])
 
     send = {'series_aud' : audio_probab, 'series_vid' : video_probab,'series_txt' : text_probab,'series_pulse':series_pulse}
     print(send)
     data_now = data_template # чистим для запуска нового теста
     return jsonify({'data':send})
-    
 
+# эти функции будут одновременно
+#проблема в том что функция запущенная в потоке не може вернуть результат, поэтому пишем так и сохраняем данные в глобальную переменную
+def processing_audio(file_path):
+    global data_now
+    data_now.audio_probabilities = moduls.audio_recognition(file_path)
+    
+def processing_text(file_path):    
+    global data_now
+    data_now.text_probabilities = moduls.text_recognition(file_path)
+
+def processing_pulse(file_path):
+    global data_now
+    data_now.pulse_line = moduls.file_pulse_detect(file_path)
+
+@app.route('/')
+def index():
+    return redirect(url_for('online'))
+
+@app.route('/online')
+def online():
+    return render_template('online.html')
+@app.route('/file')
+def file():
+    return render_template('file.html')
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
+
+@app.route('/upload_frame_deepface', methods=["GET", "POST"])
+def upload_frame():
+    data = request.get_json()
+    global data_now # без глобала не видит дата_нау
+    encoded_data = data["data"].split(',')[1]
+    nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)#Раскодировали дату
+
+    emotions, img_rec = moduls.frame_detection(img)
+    if(emotions):
+      for emotion in emotions:
+          data_now.video_probabilities[emotion] = (data_now.video_probabilities[emotion]+emotions[emotion])/2
+
+    jpg_img = cv2.imencode('.jpg', img_rec)
+    b64_string = base64.b64encode(jpg_img[1]).decode('utf-8')
+    b64_string = "data:image/jpg;base64," + b64_string
+    return jsonify({'data':b64_string}) # отправляем картинку с выделенной зоной интереса
+    
+@app.route('/upload_frame_yarppg', methods=["GET", "POST"])
+def upload_frame_yarppg(): 
+    global now_frame_pulse, data_now
+    data = request.get_json()
+    encoded_data = data["data"].split(',')[1]
+    nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)#Раскодировали дату
+    result = moduls.rppg.process_frame(img)
+    bpm =  60 * 30 / result.hr
+    now_frame_pulse+=1
+    now_pulse = {}
+    if(bpm > 60):
+        now_pulse = {"x": now_frame_pulse, "value": bpm}
+        data_now.pulse_line.append(bpm)
+    print(now_pulse)
+    return jsonify({'data':now_pulse}) 
 
 @app.route('/upload_audio', methods=["POST"])
 def upload_audio():
@@ -112,8 +126,13 @@ def upload_audio():
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_file.filename)     # Сохраняем файл
     audio_segment.export(file_path , format="wav")
 
-    data_now.audio_probabilities = moduls.audio_recognition(file_path)  # Обработка аудио
-    data_now.text_probabilities = moduls.text_recognition(file_path)  # Обработка текст
+    th_aud = Thread(target=processing_audio, args=(file_path,))#поток с голосовой обработкой
+    th_txt = Thread(target=processing_text, args=(file_path,))#поток с текстовой обработкой
+
+    th_aud.start()
+    th_txt.start()
+    th_aud.join()
+    th_txt.join()
 
     send = result_moduls(data_now)
     return send
@@ -134,14 +153,16 @@ def upload_file():
     th_aud = Thread(target=processing_audio, args=(audio_path,))#поток с голосовой обработкой
     th_txt = Thread(target=processing_text, args=(audio_path,))#поток с текстовой обработкой
     th_video = Thread(target=processing_frames, args=(file_path,))#поток с видео обработкой
-
+    th_pulse = Thread(target=processing_pulse, args=(file_path,))
     th_aud.start()
     th_txt.start()
     th_video.start()
+    th_pulse.start()
 
     th_aud.join()
     th_txt.join()# пока потоки не завершат свою работу программа не будет дальше работать
     th_video.join()
+    th_pulse.join()
 
     send = result_moduls(data_now)#send уже json
     return send
@@ -156,10 +177,6 @@ def processing_frames(file_path):
         success, img = video.read() 
         now_frame+=1
         try:
-            pulse = moduls.rppg.process_frame(img)
-            if(pulse.hr >50): #самописные модули из moduls в потоке криво работают
-                data_now.pulse_line.append(pulse.hr)
-
             if(now_frame == 5):
                 emotions, img_rec = moduls.frame_detection(img)
                 if(emotions):

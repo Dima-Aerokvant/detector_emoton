@@ -1,18 +1,28 @@
+import moduls
 from flask import Flask, render_template, request, redirect, url_for
 from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
-import time
 import base64
-import video_rec
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
+class data_template:
+    video_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}
+    audio_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}# данные обработки всех модулей остаются на сервере
+    text_probabilities = {'angry': 0, 'disgust': 0, 'fear': 0, 'happy': 0, 'sad': 0, 'surprise': 0, 'neutral': 0}
+    pulse_line = []
+
+data_now = data_template
+
+
 @app.route('/')
 def index():
     return redirect(url_for('online'))
+
 @app.route('/online')
 def online():
     return render_template('online.html')
@@ -22,27 +32,53 @@ def file():
 @app.route('/settings')
 def settings():
     return render_template('settings.html')
-@socketio.on('upload')
-def upload(data):
-    # print(data)
+
+@socketio.on('uploadFrame')
+def uploadFrame(data):
+    global data_now # без глобала не видит дата_нау
     encoded_data = data["data"].split(',')[1]
     nparr = np.fromstring(base64.b64decode(encoded_data), np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
-
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    text = video_rec.video_recognize(img)
-    # text = "2342342"
-    img = cv2.putText(img, text, (15, 30), cv2.FONT_HERSHEY_COMPLEX, 0.9, (255, 255, 255), 1, cv2.LINE_AA)
-
-    jpg_img = cv2.imencode('.jpg', img)
+    emotions, img_rec = moduls.frame_detection(img)
+    fps = data['pulse']
+    result = moduls.rppg.process_frame(img)
+    if(result.hr > 60):
+        data_now.pulse_line.append(result.hr)
+    print(result.hr)# первые 300 кадров он пишет нан. нужно как то изменить размер буферра https://samproell.github.io/yarppg/deepdive/ 
+    jpg_img = cv2.imencode('.jpg', img_rec)# и по идее тут есть казус  с частотой кадров ведь мы берем каждый какой то там кадр
     b64_string = base64.b64encode(jpg_img[1]).decode('utf-8')
     b64_string = "data:image/jpg;base64," + b64_string
+    if(emotions):
+        for emotion in emotions:
+            data_now.video_probabilities[emotion] = (data_now.video_probabilities[emotion]+emotions[emotion])/2
     emit('my_response', b64_string)
-    # testf()
+    data_now = data_template
+
+@socketio.on('uploadResult')
+def emit_result(data):
+    global data_now# без глобала не видит дата_нау
+    video_probab =[]
+    audio_probab = []
+    text_probab = []
+    series_pulse = []
+    for emotion in data_now.video_probabilities:
+        video_probab.append([str(emotion), int(data_now.video_probabilities[emotion])]) # переделываем словарь в массив нужна для вывода в диограммы
+    for emotion in data_now.audio_probabilities:
+        audio_probab.append([str(emotion), int(data_now.audio_probabilities[emotion])])  
+    for emotion in data_now.text_probabilities:
+        text_probab.append([str(emotion), int(data_now.text_probabilities[emotion])])
+    for i in range(len(data_now.pulse_line)):
+        series_pulse.append([data_now.pulse_line[i],i+1])
+
+    send = {'series_aud' : audio_probab, 'series_vid' : video_probab,'series_txt' : text_probab,'series_pulse':series_pulse}
+    emit('chart_update', send)
+    data_now = data_template # чистим для запуска нового теста
+
+
 
 @socketio.on('uploadAudio')
 def uploadAudio(data):
-    print (len(data))
+    print(data)
 
 @socketio.on('startRec')
 def startRec(data):
@@ -52,10 +88,6 @@ def startRec(data):
         print ("SEND") #sahdahfva
         emit('send_list', ["123", "234", "345"])
 
-def testf():
-    for _ in range (10):
-        time.sleep(2)
-        emit('my_response', "superdata")
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

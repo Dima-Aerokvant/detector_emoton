@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdn.anychart.com/releases/8.13.0/js/anychart-base.min.js" type="text/javascript"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  </head>
+  <body class="text-bg-Light  p-3">
+    <!--Навигация-->
+    <div class="container">
+        <header class="d-flex justify-content-center py-3">
+          <ul class="nav nav-pills">
+            <li class="nav-item"><a href="" class="nav-link active" aria-current="page">С камеры</a></li>
+            <li class="nav-item"><a href="file" class="nav-link">Из файла</a></li>
+            <li class="nav-item"><a href="settings" class="nav-link">Настройки</a></li>
+          </ul>
+        </header>
+      </div>
+    <!--Видосы-->
+    <div class="container text-center">
+      <div class="row">
+        <div class="col">
+          <video id="video" class="rounded" width="320" height="240"></video>
+        </div>
+        <div class="col">
+          <img id="server"  class="rounded"   src="" width="320" height="240" style="background-color: grey" />
+        </div>
+      </div>
+    </div>
+
+    <!--Кнопка-->
+    <div class="b-example-divider"></div>
+    <div class="container text-center">  
+
+      <div class="row g-15">
+        <div class="col">
+          <button type="button" id="btnStart" class="btn btn-primary" onclick="clickStart()">Запустить</button>
+        </div>
+      </div>
+    </div>
+
+    <!--Преобладающая эмоция-->
+    <div class="container text-center">  
+      <p class="fw-semibold">Преобладающая эмоция:</p> <p></p>
+    </div>
+
+    <!--Создаем 3 графика для вывода вероятностей-->
+    <div class="card" style= "width: 100; height: 100">
+      <div class="row">
+          <div class = "col">
+            <div id="chart_audio">
+              <script> 
+                var chart_aud = anychart.column();
+                var series_aud = chart_aud.column();
+                chart_aud.xAxis().title("Emotion");
+                chart_aud.yAxis().title("probabilities");
+                chart_aud.title("audio emotion");
+                chart_aud.container("chart_audio");
+                chart_aud.draw();
+              </script>
+            </div>
+          </div>
+
+          <div class = "col">
+            <div id="chart_video">
+              <script> 
+                var chart_vid = anychart.column();
+                var series_vid = chart_vid.column();
+                chart_vid.xAxis().title("Emotion");
+                chart_vid.yAxis().title("probabilities");
+                chart_vid.title("video emotion");
+                chart_vid.container("chart_video");
+                chart_vid.draw();
+              </script>
+            </div>
+          </div>
+
+          <div class = "col">
+            <div id="chart_txt">
+              <script> 
+                var chart_txt = anychart.column();
+                var series_txt = chart_vid.column();
+                chart_txt.xAxis().title("Emotion");
+                chart_txt.yAxis().title("probabilities");
+                chart_txt.title("text emotion");
+                chart_txt.container("chart_txt");
+                chart_txt.draw();
+              </script>
+            </div>
+          </div>
+
+      </div>
+    </div>
+    <div class="row">
+      <div id="chart_puls">
+        <script>
+          var chart_pulse = anychart.line()
+          var series_pulse = chart_pulse.line();
+          chart_pulse.container("chart_puls")
+          chart_pulse.draw()
+        </script>
+      </div>
+    </div>
+  </body>    
+
+    <!--Скрипт-->
+    <script>
+      // Grab elements, create settings, etc.
+      //var video = document.createElement('video');
+      var server = document.getElementById("server");
+      var socket = io();
+      var canvas = document.createElement('canvas')
+      var btnStart = false;
+      canvas.width = 320
+      canvas.height = 240
+      var context = canvas.getContext('2d');
+      let videoSender;
+      var voice;
+      let mediaRecorder;
+      let x = [1,2,3,4,5,6,7]
+      let video_td = document.querySelectorAll('.video-td');
+       
+      video_td.forEach((el, i) => el.textContent = x[i]);
+
+      var fps = 0
+
+      if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+              navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function(stream) {
+              video.srcObject = stream; 
+              video.play();
+              mediaRecorder = new MediaRecorder(stream);     
+              fps = stream.getVideoTracks()[0].getSettings().frameRate          
+          });
+      }
+
+      function clickStart() {
+        if (btnStart) {
+          document.getElementById("btnStart").classList.remove('btn-secondary');
+          document.getElementById("btnStart").classList.add('btn-primary');
+
+          mediaRecorder.stop();
+          clearInterval(videoSender);
+
+          const voiceBlob = new Blob(voice, {
+              type: 'audio/wav'
+          });
+          socket.emit('uploadAudio', {data: voiceBlob})
+          voice = []
+          socket.emit('uploadResult', NaN)
+          console.log("upld result")
+
+        }
+        else {
+          document.getElementById("btnStart").classList.remove('btn-primary');
+          document.getElementById("btnStart").classList.add('btn-secondary');
+
+          videoSender = window.setInterval(function() {
+                  console.log("send")
+                  context.drawImage(video, 0, 0, 320, 240); // better use size because camera may gives data in different size then <video> is displaying
+                  socket.emit('uploadFrame', {'data': canvas.toDataURL('image/jpeg',0.99) , 'pulse': fps})
+              }, 500);
+
+          
+          mediaRecorder.start();
+
+          mediaRecorder.addEventListener("dataavailable",function(event) {
+              voice.push(event.data);
+          });
+        }
+        console.log(btnStart);
+        btnStart = !btnStart;
+        socket.emit('startRec', {data: btnStart})
+      }
+
+      socket.on('send_list', function(data) {
+              console.log(data[0])
+              console.log(data[1])
+              console.log(data[2])
+          })
+
+      socket.on('my_response', function(data) {
+              server.src = data
+          });
+
+      socket.on('chart_update', function(data) {/*Рисум значения в графиках*/
+          console.log(data)
+          var series_aud = chart_aud.column(data['series_aud'])
+          chart_aud.draw()
+
+          var series_vid = chart_vid.column(data['series_vid'])
+          chart_vid.draw()
+
+          var series_txt = chart_txt.column(data['series_txt'])
+          chart_txt.draw()
+
+          var series_pulse = chart_pulse.line(data['series_pulse'])
+          chart_pulse.draw()
+      });    
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  </body>
+</html>
